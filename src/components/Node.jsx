@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import Draggable from 'react-draggable';
 import useNodeStore from '../store/nodestore';
 
@@ -6,10 +6,43 @@ function Node({ node, isSelected }) {
   const selectNode = useNodeStore((state) => state.selectNode);
   const updateNode = useNodeStore((state) => state.updateNode);
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(node.title);
   const nodeRef = useRef(null);
 
+  // When drag ends, update position
   const handleStop = (e, data) => {
     updateNode(node.id, { x: data.x, y: data.y });
+  };
+
+  // Double click to edit
+  const handleDoubleClick = () => {
+    setName(node.title); // load current title
+    setIsEditing(true);
+  };
+
+  // Input handlers
+  const handleNameChange = (e) => {
+    setName(e.target.value);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      finishEditing();
+    }
+  };
+
+  const handleBlur = () => {
+    finishEditing();
+  };
+
+  // Save title change
+  const finishEditing = () => {
+    const trimmed = name.trim();
+    if (trimmed !== '') {
+      updateNode(node.id, { title: trimmed });
+    }
+    setIsEditing(false);
   };
 
   return (
@@ -21,6 +54,7 @@ function Node({ node, isSelected }) {
     >
       <div
         ref={nodeRef}
+        onDoubleClick={handleDoubleClick}
         style={{
           position: 'absolute',
           minWidth: '180px',
@@ -42,9 +76,32 @@ function Node({ node, isSelected }) {
           cursor: 'move',
           transition: 'all 0.25s ease',
           zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        {node.title || 'Untitled'}
+        {isEditing ? (
+          <input
+            type="text"
+            value={name}
+            onChange={handleNameChange}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            autoFocus
+            style={{
+              width: '100%',
+              padding: '8px',
+              fontSize: '16px',
+              borderRadius: '8px',
+              border: '1px solid #ccc',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        ) : (
+          node.title || 'Untitled'
+        )}
       </div>
     </Draggable>
   );
